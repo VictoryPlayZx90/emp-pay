@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { ArrowLeft, Download, Pencil, Plus, Trash2, X, ChevronRight, Camera } from 'lucide-react';
 import { PhotoUploadCrop } from './PhotoUploadCrop';
 import { toast } from 'sonner';
@@ -9,7 +9,6 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import type { Employee, AttendanceRecord, Holiday, Settings, EmployeeNote, EmployeeDocument } from '../App';
 import type { UserProfile } from './UserSelectScreen';
 import { ProfilePhoto } from './ProfilePhoto';
-import { DocumentManager } from './DocumentManager';
 import { calcPayroll, calculateAttendanceSummary, makeDateStr, type AttendanceSummary } from '../utils/attendanceEngine';
 
 interface Props {
@@ -44,6 +43,18 @@ interface PayrollRecord {
   netSalary: number;
   isJoiningMonth: boolean;
   eligibleDays: number;
+}
+
+function EmployeeSectionVisual({ section, salary, leaveCount = 0 }: { section: SectionType; salary: number; leaveCount?: number }) {
+  return (
+    <span className={`profile-bento-visual profile-bento-visual-${section}`} aria-hidden="true">
+      {section === 'calendar' && <span className="profile-mini-calendar">{Array.from({ length: 14 }, (_, index) => <i key={index} />)}</span>}
+      {section === 'attendance' && <span className="profile-mini-bars">{[38, 68, 48, 86, 58, 100, 72].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</span>}
+      {section === 'leave' && <span className="profile-mini-ring"><i>{leaveCount}</i></span>}
+      {section === 'payroll' && <span className="profile-mini-pay"><i>₹{salary.toLocaleString('en-IN')}</i><b /><b /><b /></span>}
+      {section === 'notes' && <span className="profile-mini-note"><i /><i /><i /></span>}
+    </span>
+  );
 }
 
 // ─── India states & major cities ──────────────────────────────────────────────
@@ -344,7 +355,18 @@ export function EmployeeProfileScreen({
   currentUser,
 }: Props) {
   const isMobile = useIsMobile();
-  const [expandedSection, setExpandedSection] = useState<SectionType>('calendar');
+  const [expandedSection, setExpandedSection] = useState<SectionType | null>(null);
+
+  useEffect(() => {
+    if (!expandedSection) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExpandedSection(null);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [expandedSection]);
+  const [showEmployeeInfo, setShowEmployeeInfo] = useState(false);
+  const [showAttendanceBreakdown, setShowAttendanceBreakdown] = useState(false);
   const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('this-month');
   const [customDateRange, setCustomDateRange] = useState<DateRange>({ from: '', to: '' });
   const [showExportModal, setShowExportModal] = useState(false);
@@ -1042,9 +1064,9 @@ export function EmployeeProfileScreen({
         </div>
 
         {/* Scrollable Content */}
-        <div ref={scrollContainerRef} style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '0 0 16px 0' : '24px 36px' }}>
+        <div className="employee-profile-scroll" ref={scrollContainerRef} style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '0 0 16px 0' : '24px 36px' }}>
           {/* Employee Summary Card */}
-          <div style={{
+          <div className="employee-overview-card" style={{
             background: 'var(--app-card)',
             border: '1px solid var(--app-border)',
             borderRadius: isMobile ? 0 : 16,
@@ -1087,36 +1109,45 @@ export function EmployeeProfileScreen({
             </div>
 
             {/* Quick Stats Grid */}
-            <div style={{
+            <div className="employee-overview-stats" style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
               gap: 12,
               paddingTop: 16,
               borderTop: '1px solid var(--app-border-subtle)'
             }}>
-              <div>
+              <div className="employee-overview-stat">
                 <div style={{ fontSize: 11, color: 'var(--app-text-muted)', marginBottom: 4 }}>Present</div>
                 <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#16A34A' }}>{stats.presentDays}</div>
+                <div className="employee-overview-track"><span style={{ width: `${Math.min(100, stats.totalWorkingDays ? Math.round(stats.presentDays / stats.totalWorkingDays * 100) : 0)}%` }} /></div>
               </div>
-              <div>
+              <div className="employee-overview-stat">
                 <div style={{ fontSize: 11, color: 'var(--app-text-muted)', marginBottom: 4 }}>Leaves</div>
                 <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#F59E0B' }}>{stats.paidLeaves + stats.sickLeaves + stats.unpaidLeaves}</div>
+                <div className="employee-overview-track leave"><span style={{ width: `${Math.min(100, stats.totalWorkingDays ? Math.round((stats.paidLeaves + stats.sickLeaves + stats.unpaidLeaves) / stats.totalWorkingDays * 100) : 0)}%` }} /></div>
               </div>
-              <div>
+              <div className="employee-overview-stat">
                 <div style={{ fontSize: 11, color: 'var(--app-text-muted)', marginBottom: 4 }}>Attendance</div>
                 <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: 'var(--app-text-primary)' }}>{stats.attendancePercentage}%</div>
+                <div className="employee-overview-track"><span style={{ width: `${stats.attendancePercentage}%` }} /></div>
               </div>
-              <div>
+              <div className="employee-overview-stat">
                 <div style={{ fontSize: 11, color: 'var(--app-text-muted)', marginBottom: 4 }}>Est. Salary</div>
                 <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: '#059669' }}>
                   ₹{payrollRecords[0] ? payrollRecords[0].netSalary.toLocaleString('en-IN') : '0'}
                 </div>
+                <div className="employee-overview-track salary"><span style={{ width: `${payrollRecords[0] && employee.salary ? Math.min(100, Math.round(payrollRecords[0].netSalary / employee.salary * 100)) : 0}%` }} /></div>
               </div>
             </div>
 
             {/* Additional Employee Information */}
-            {(employee.mobile || employee.email || employee.designation || employee.currentAddress) && (
-              <div style={{ paddingTop: 16, borderTop: '1px solid var(--app-border-subtle)', marginTop: 16 }}>
+            {(employee.mobile || employee.alternateMobile || employee.email || employee.designation || employee.employeeCode || employee.employmentType || employee.dateOfBirth || employee.gender || employee.emergencyContactName || employee.emergencyContactNumber || employee.currentAddress || employee.city || employee.state || employee.postalCode || employee.country) && (
+              <div className="employee-extra-details">
+                <button className="employee-extra-details-toggle" type="button" aria-expanded={showEmployeeInfo} onClick={() => setShowEmployeeInfo(value => !value)}>
+                  <span>Employment and personal details</span>
+                  <span>{showEmployeeInfo ? 'Hide details' : 'Show details'} <ChevronRight size={14} /></span>
+                </button>
+                {showEmployeeInfo && <div className="employee-extra-details-content">
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
                   {/* Employment Details */}
                   {(employee.designation || employee.employeeCode || employee.employmentType) && (
@@ -1232,74 +1263,31 @@ export function EmployeeProfileScreen({
                     )}
                   </div>
                 )}
+                </div>}
               </div>
             )}
           </div>
 
-          {/* Documents Section */}
-          <div style={{
-            background: 'var(--app-card)',
-            border: '1px solid var(--app-border)',
-            borderRadius: isMobile ? 0 : 16,
-            padding: isMobile ? '20px 16px' : '24px',
-            marginBottom: 16
-          }}>
-            <DocumentManager
-              documents={employee.documents || []}
-              onDocumentsChange={(docs) => {
-                onUpdateEmployees(employees.map(e =>
-                  e.id === employee.id ? { ...e, documents: docs } : e
-                ));
-              }}
-              isMobile={isMobile}
-            />
-          </div>
-
-          {/* Sticky Date Filter */}
-          <div style={{
-            background: 'var(--app-card)',
-            border: '1px solid var(--app-border)',
-            borderRadius: isMobile ? 0 : 12,
-            padding: isMobile ? '16px' : '16px 20px',
-            marginBottom: 16,
-            position: isMobile ? 'sticky' : 'relative',
-            top: isMobile ? 0 : 'auto',
-            zIndex: 9,
-          }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {[
-                { label: 'This Month', value: 'this-month' as DateRangePreset },
-                { label: 'Last Month', value: 'last-month' as DateRangePreset },
-                { label: 'Last 3M', value: 'last-3-months' as DateRangePreset },
-                { label: 'This Year', value: 'this-year' as DateRangePreset },
-                { label: 'All Time', value: 'all-time' as DateRangePreset },
-              ].map(preset => (
-                <button
-                  key={preset.value}
-                  onClick={() => setDateRangePreset(preset.value)}
-                  style={{
-                    padding: '7px 12px',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    background: dateRangePreset === preset.value ? 'var(--app-btn-primary-bg)' : 'var(--app-input-bg)',
-                    color: dateRangePreset === preset.value ? 'var(--app-btn-primary-fg)' : 'var(--app-text-muted)',
-                    border: '1px solid',
-                    borderColor: dateRangePreset === preset.value ? 'var(--app-btn-primary-bg)' : 'var(--app-input-border)',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--app-text-muted)', marginTop: 8 }}>
-              {formatDate(dateRange.from)} — {formatDate(dateRange.to)}
-            </div>
-          </div>
-
           {/* Analytics Summary Cards - Responsive Grid */}
-          {isMobile && (
+          <div className="profile-attendance-toolbar">
+            <button className="attendance-breakdown-toggle" type="button" aria-expanded={showAttendanceBreakdown} onClick={() => setShowAttendanceBreakdown(value => !value)}>
+              <span>Attendance breakdown</span>
+              <span>{showAttendanceBreakdown ? 'Hide' : 'View'} <ChevronRight size={14} /></span>
+            </button>
+            <label className="profile-range-filter">
+              <span>Time span</span>
+              <select aria-label="Attendance time span" value={dateRangePreset} onChange={event => setDateRangePreset(event.target.value as DateRangePreset)}>
+                <option value="this-month">This Month</option>
+                <option value="last-month">Last Month</option>
+                <option value="last-3-months">Last 3 Months</option>
+                <option value="last-6-months">Last 6 Months</option>
+                <option value="this-year">This Year</option>
+                <option value="all-time">All Time</option>
+              </select>
+              <small>{formatDate(dateRange.from)} — {formatDate(dateRange.to)}</small>
+            </label>
+          </div>
+          {showAttendanceBreakdown && isMobile && (
             <div style={{ marginBottom: 16, padding: '0 16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                 {[
@@ -1310,23 +1298,24 @@ export function EmployeeProfileScreen({
                   { label: 'Other', value: stats.otherAbsences, color: 'var(--app-text-muted)' },
                   { label: 'Working Days', value: stats.totalWorkingDays, color: 'var(--app-text-primary)' },
                 ].map(card => (
-                  <div key={card.label} style={{
+                  <div className="employee-detail-stat" key={card.label} style={{
                     background: 'var(--app-card)',
                     border: '1px solid var(--app-border)',
                     borderRadius: 12,
                     padding: '12px 10px',
                     textAlign: 'center'
                   }}>
-                    <div style={{ fontSize: 10, color: 'var(--app-text-muted)', marginBottom: 4 }}>{card.label}</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: card.color }}>{card.value}</div>
+                    <div className="employee-detail-stat-head"><span style={{ background: card.color }} />{card.label}</div>
+                    <div className="employee-detail-stat-value">{card.value}<span> days</span></div>
+                    <div className="employee-detail-stat-track" role="progressbar" aria-label={card.label} aria-valuemin={0} aria-valuemax={Math.max(1, stats.totalWorkingDays)} aria-valuenow={card.value}><span style={{ width: `${Math.min(100, stats.totalWorkingDays ? Math.round(card.value / stats.totalWorkingDays * 100) : 0)}%`, background: card.color }} /></div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {!isMobile && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+          {showAttendanceBreakdown && !isMobile && (
+            <div className="employee-detail-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
               {[
                 { label: 'Half Days', value: stats.halfDays, color: '#F59E0B' },
                 { label: 'Paid Leaves', value: stats.paidLeaves, color: '#3B82F6' },
@@ -1335,20 +1324,31 @@ export function EmployeeProfileScreen({
                 { label: 'Other Absences', value: stats.otherAbsences, color: 'var(--app-text-muted)' },
                 { label: 'Total Working Days', value: stats.totalWorkingDays, color: 'var(--app-text-primary)' },
               ].map(card => (
-                <div key={card.label} style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, padding: '16px' }}>
-                  <div style={{ fontSize: 12, color: 'var(--app-text-muted)', marginBottom: 6 }}>{card.label}</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: card.color }}>{card.value}</div>
+                <div className="employee-detail-stat" key={card.label} style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, padding: '16px' }}>
+                  <div className="employee-detail-stat-head"><span style={{ background: card.color }} />{card.label}</div>
+                  <div className="employee-detail-stat-value">{card.value}<span> days</span></div>
+                  <div className="employee-detail-stat-track" role="progressbar" aria-label={card.label} aria-valuemin={0} aria-valuemax={Math.max(1, stats.totalWorkingDays)} aria-valuenow={card.value}><span style={{ width: `${Math.min(100, stats.totalWorkingDays ? Math.round(card.value / stats.totalWorkingDays * 100) : 0)}%`, background: card.color }} /></div>
                 </div>
               ))}
             </div>
           )}
 
+          {expandedSection && (
+            <button
+              className="profile-detail-backdrop"
+              type="button"
+              aria-label="Close employee details"
+              onClick={() => setExpandedSection(null)}
+            />
+          )}
+
           {/* Expandable Sections (Mobile) or Tabs (Desktop) */}
           {isMobile ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 16px' }}>
+            <div className="profile-detail-tabs profile-detail-tabs-mobile">
               {/* Calendar View Section */}
-              <div style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, overflow: 'hidden' }}>
+              <div className={`profile-bento-mobile-card${expandedSection === 'calendar' ? ' is-expanded' : ''}`}>
                 <button
+                  aria-expanded={expandedSection === 'calendar'}
                   onClick={() => setExpandedSection(expandedSection === 'calendar' ? null as any : 'calendar')}
                   style={{
                     width: '100%',
@@ -1361,6 +1361,7 @@ export function EmployeeProfileScreen({
                     cursor: 'pointer'
                   }}
                 >
+                  <EmployeeSectionVisual section="calendar" salary={employee.salary} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>Calendar View</div>
                   </div>
@@ -1480,12 +1481,10 @@ export function EmployeeProfileScreen({
                           { label: 'Unpaid', value: monthStats.unpaidLeave, color: '#EF4444' },
                           { label: 'Other', value: monthStats.other, color: '#F97316' },
                         ].map(item => (
-                          <div key={item.label} style={{ background: 'var(--app-input-bg)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 10, height: 10, background: item.color, borderRadius: 2, flexShrink: 0 }} />
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 10, color: 'var(--app-text-muted)' }}>{item.label}</div>
-                              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--app-text-primary)' }}>{item.value}</div>
-                            </div>
+                          <div className="profile-calendar-stat" key={item.label} style={{ background: 'var(--app-input-bg)', borderRadius: 8, padding: '10px 12px' }}>
+                            <div className="profile-calendar-stat-head"><span className="profile-calendar-stat-dot" style={{ background: item.color }} />{item.label}</div>
+                            <div className="profile-calendar-stat-value">{item.value}<span> days</span></div>
+                            <div className="profile-calendar-stat-track"><span style={{ width: `${Math.min(100, Math.round(item.value / new Date(calendarYear, calendarMonth + 1, 0).getDate() * 100))}%`, background: item.color }} /></div>
                           </div>
                         ))}
                       </div>
@@ -1522,6 +1521,7 @@ export function EmployeeProfileScreen({
                               days.push(
                                 <button
                                   key={day}
+                                  className={`profile-calendar-day${code ? ` is-${code.toLowerCase()}` : ' is-unmarked'}${selectedCalendarDate === dateStr ? ' is-selected' : ''}`}
                                   onClick={() => setSelectedCalendarDate(dateStr)}
                                   style={{
                                     minHeight: 48,
@@ -1532,8 +1532,8 @@ export function EmployeeProfileScreen({
                                     gap: 2,
                                     fontSize: 13,
                                     fontWeight: 600,
-                                    background: bgColor,
-                                    color: bgColor === 'transparent' ? 'var(--app-text-primary)' : '#FFFFFF',
+                                    background: bgColor === 'transparent' ? 'var(--app-card)' : `color-mix(in srgb, ${bgColor} 20%, var(--app-card))`,
+                                    color: 'var(--app-text-primary)',
                                     border: selectedCalendarDate === dateStr ? '2px solid var(--app-btn-primary-bg)' : '1px solid var(--app-border-subtle)',
                                     borderRadius: 8,
                                     cursor: 'pointer',
@@ -1541,7 +1541,7 @@ export function EmployeeProfileScreen({
                                   }}
                                 >
                                   <div>{day}</div>
-                                  {code && <div style={{ fontSize: 9, fontWeight: 700, opacity: 0.9 }}>{code}</div>}
+                                  {code && <div className="profile-calendar-day-label">{code}</div>}
                                 </button>
                               );
                             }
@@ -1630,8 +1630,9 @@ export function EmployeeProfileScreen({
               </div>
 
               {/* Attendance Section */}
-              <div style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, overflow: 'hidden' }}>
+              <div className={`profile-bento-mobile-card${expandedSection === 'attendance' ? ' is-expanded' : ''}`}>
                 <button
+                  aria-expanded={expandedSection === 'attendance'}
                   onClick={() => setExpandedSection(expandedSection === 'attendance' ? null as any : 'attendance')}
                   style={{
                     width: '100%',
@@ -1644,6 +1645,7 @@ export function EmployeeProfileScreen({
                     cursor: 'pointer'
                   }}
                 >
+                  <EmployeeSectionVisual section="attendance" salary={employee.salary} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>Attendance History</div>
                     <div style={{ fontSize: 12, color: 'var(--app-text-muted)' }}>({attendanceHistory.length})</div>
@@ -1692,8 +1694,9 @@ export function EmployeeProfileScreen({
               </div>
 
               {/* Leave Section */}
-              <div style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, overflow: 'hidden' }}>
+              <div className={`profile-bento-mobile-card${expandedSection === 'leave' ? ' is-expanded' : ''}`}>
                 <button
+                  aria-expanded={expandedSection === 'leave'}
                   onClick={() => setExpandedSection(expandedSection === 'leave' ? null as any : 'leave')}
                   style={{
                     width: '100%',
@@ -1706,6 +1709,7 @@ export function EmployeeProfileScreen({
                     cursor: 'pointer'
                   }}
                 >
+                  <EmployeeSectionVisual section="leave" salary={employee.salary} leaveCount={leaveHistory.length} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>Leave History</div>
                     <div style={{ fontSize: 12, color: 'var(--app-text-muted)' }}>({leaveHistory.length})</div>
@@ -1743,8 +1747,9 @@ export function EmployeeProfileScreen({
               </div>
 
               {/* Payroll Section */}
-              <div style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, overflow: 'hidden' }}>
+              <div className={`profile-bento-mobile-card${expandedSection === 'payroll' ? ' is-expanded' : ''}`}>
                 <button
+                  aria-expanded={expandedSection === 'payroll'}
                   onClick={() => setExpandedSection(expandedSection === 'payroll' ? null as any : 'payroll')}
                   style={{
                     width: '100%',
@@ -1757,6 +1762,7 @@ export function EmployeeProfileScreen({
                     cursor: 'pointer'
                   }}
                 >
+                  <EmployeeSectionVisual section="payroll" salary={employee.salary} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>Payroll History</div>
                     <div style={{ fontSize: 12, color: 'var(--app-text-muted)' }}>({payrollRecords.length})</div>
@@ -1800,8 +1806,9 @@ export function EmployeeProfileScreen({
               </div>
 
               {/* Notes Section */}
-              <div style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 12, overflow: 'hidden' }}>
+              <div className={`profile-bento-mobile-card${expandedSection === 'notes' ? ' is-expanded' : ''}`}>
                 <button
+                  aria-expanded={expandedSection === 'notes'}
                   onClick={() => setExpandedSection(expandedSection === 'notes' ? null as any : 'notes')}
                   style={{
                     width: '100%',
@@ -1814,6 +1821,7 @@ export function EmployeeProfileScreen({
                     cursor: 'pointer'
                   }}
                 >
+                  <EmployeeSectionVisual section="notes" salary={employee.salary} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>Employee Notes</div>
                     <div style={{ fontSize: 12, color: 'var(--app-text-muted)' }}>({employeeNotesFiltered.length})</div>
@@ -1875,42 +1883,47 @@ export function EmployeeProfileScreen({
           ) : (
             // Desktop tabs
             <>
-              <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--app-border)' }}>
+                      <div className="profile-detail-tabs" role="group" aria-label="Employee record views">
                 {[
-                  { label: 'Calendar View', value: 'calendar' as const },
-                  { label: 'Attendance History', value: 'attendance' as const },
-                  { label: 'Leave History', value: 'leave' as const },
-                  { label: 'Payroll History', value: 'payroll' as const },
-                  { label: 'Notes', value: 'notes' as const },
+                  { label: 'Calendar', detail: `${getMonthName(calendarMonth)} ${calendarYear} · View attendance`, value: 'calendar' as const, count: new Date(calendarYear, calendarMonth + 1, 0).getDate() },
+                  { label: 'Attendance', detail: 'Daily check-ins and status history', value: 'attendance' as const, count: attendanceHistory.length },
+                  { label: 'Leave', detail: 'Leave records for this period', value: 'leave' as const, count: leaveHistory.length },
+                  { label: 'Payroll', detail: 'Monthly pay and deductions', value: 'payroll' as const, count: payrollRecords.length },
+                  { label: 'Notes', detail: 'Employee notes and updates', value: 'notes' as const, count: employeeNotesFiltered.length },
                 ].map(tab => (
                   <button
                     key={tab.value}
-                    onClick={() => setExpandedSection(tab.value)}
-                    style={{
-                      padding: '10px 16px',
-                      fontSize: 13,
-                      fontWeight: 500,
-                      background: 'none',
-                      color: expandedSection === tab.value ? 'var(--app-text-primary)' : 'var(--app-text-muted)',
-                      border: 'none',
-                      borderBottom: expandedSection === tab.value ? '2px solid var(--app-btn-primary-bg)' : '2px solid transparent',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
+                    className={`profile-bento-link${expandedSection === tab.value ? ' is-expanded' : ''}`}
+                    onClick={() => setExpandedSection(expandedSection === tab.value ? null : tab.value)}
+                    aria-expanded={expandedSection === tab.value}
                   >
-                    {tab.label}
+                    <span className={`profile-bento-visual profile-bento-visual-${tab.value}`} aria-hidden="true">
+                      {tab.value === 'calendar' && <span className="profile-mini-calendar">{Array.from({ length: 14 }, (_, index) => <i key={index} />)}</span>}
+                      {tab.value === 'attendance' && <span className="profile-mini-bars">{[38, 68, 48, 86, 58, 100, 72].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</span>}
+                      {tab.value === 'leave' && <span className="profile-mini-ring"><i>{leaveHistory.length}</i></span>}
+                      {tab.value === 'payroll' && <span className="profile-mini-pay"><i>₹{employee.salary.toLocaleString('en-IN')}</i><b /><b /><b /></span>}
+                      {tab.value === 'notes' && <span className="profile-mini-note"><i /><i /><i /></span>}
+                    </span>
+                    <span className="profile-bento-link-top"><span>{tab.label}</span><span className="profile-bento-link-count">{tab.count}</span></span>
+                    <span className="profile-bento-link-detail">{tab.detail}</span>
+                    <span className="profile-bento-link-action">{expandedSection === tab.value ? 'Close view' : 'Open view'} <ChevronRight /></span>
                   </button>
                 ))}
               </div>
 
-              <div style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 16, overflow: 'hidden' }}>
+              <div className="profile-calendar-panel" style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 16, overflow: 'hidden' }}>
+                {expandedSection && (
+                  <button className="profile-popup-close" type="button" aria-label="Close details" onClick={() => setExpandedSection(null)}>
+                    <X size={18} />
+                  </button>
+                )}
                 {expandedSection === 'calendar' && (() => {
                   const monthStats = getMonthStats(calendarYear, calendarMonth, employee.id, attendance, holidays);
 
                   return (
-                    <div style={{ padding: '24px' }}>
+                    <div className="profile-calendar-content" style={{ padding: '24px' }}>
                       {/* Month/Year Navigation */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                      <div className="profile-calendar-toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                         <button
                           onClick={() => {
                             if (calendarMonth === 0) {
@@ -2000,7 +2013,7 @@ export function EmployeeProfileScreen({
                       </div>
 
                       {/* Month Summary Cards */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 24 }}>
+                      <div className="profile-calendar-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12, marginBottom: 24 }}>
                         {[
                           { label: 'Present', value: monthStats.present, color: '#10B981' },
                           { label: 'Half Day', value: monthStats.halfDay, color: '#F59E0B' },
@@ -2009,9 +2022,12 @@ export function EmployeeProfileScreen({
                           { label: 'Unpaid', value: monthStats.unpaidLeave, color: '#EF4444' },
                           { label: 'Other', value: monthStats.other, color: '#F97316' },
                         ].map(item => (
-                          <div key={item.label} style={{ background: 'var(--app-input-bg)', borderRadius: 12, padding: 16, textAlign: 'center', border: '1px solid var(--app-input-border)' }}>
-                            <div style={{ fontSize: 12, color: 'var(--app-text-muted)', marginBottom: 6 }}>{item.label}</div>
-                            <div style={{ fontSize: 28, fontWeight: 700, color: item.color }}>{item.value}</div>
+                          <div className="profile-calendar-stat" key={item.label} style={{ background: 'var(--app-input-bg)', borderRadius: 12, padding: 16, textAlign: 'center', border: '1px solid var(--app-input-border)' }}>
+                            <div className="profile-calendar-stat-head"><span className="profile-calendar-stat-dot" style={{ background: item.color }} />{item.label}</div>
+                            <div className="profile-calendar-stat-value">{item.value}<span> days</span></div>
+                            <div className="profile-calendar-stat-track" role="progressbar" aria-label={`${item.label} days`} aria-valuemin={0} aria-valuemax={new Date(calendarYear, calendarMonth + 1, 0).getDate()} aria-valuenow={item.value}>
+                              <span style={{ width: `${Math.min(100, Math.round(item.value / new Date(calendarYear, calendarMonth + 1, 0).getDate() * 100))}%`, background: item.color }} />
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -2019,7 +2035,7 @@ export function EmployeeProfileScreen({
                       {/* Calendar Grid */}
                       <div style={{ marginBottom: 24 }}>
                         {/* Day Headers */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10, marginBottom: 12 }}>
+                        <div className="profile-calendar-weekdays" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10, marginBottom: 12 }}>
                           {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
                             <div key={day} style={{ textAlign: 'center', fontSize: 13, fontWeight: 600, color: 'var(--app-text-muted)', padding: '8px 0' }}>
                               {day}
@@ -2028,7 +2044,7 @@ export function EmployeeProfileScreen({
                         </div>
 
                         {/* Calendar Days - Desktop with Full Labels */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10 }}>
+                        <div className="profile-calendar-days" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 10 }}>
                           {(() => {
                             const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
                             const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
@@ -2048,6 +2064,7 @@ export function EmployeeProfileScreen({
                               days.push(
                                 <button
                                   key={day}
+                                  className={`profile-calendar-day${label ? ` is-${label.toLowerCase().replace(/\s+/g, '-')}` : ' is-unmarked'}${selectedCalendarDate === dateStr ? ' is-selected' : ''}`}
                                   onClick={() => setSelectedCalendarDate(dateStr)}
                                   style={{
                                     minHeight: 80,
@@ -2058,9 +2075,9 @@ export function EmployeeProfileScreen({
                                     gap: 6,
                                     fontSize: 18,
                                     fontWeight: 600,
-                                    background: bgColor,
-                                    color: bgColor === 'transparent' ? 'var(--app-text-primary)' : '#FFFFFF',
-                                    border: selectedCalendarDate === dateStr ? '3px solid var(--app-btn-primary-bg)' : '1px solid var(--app-border-subtle)',
+                                    background: bgColor === 'transparent' ? 'var(--app-card)' : `color-mix(in srgb, ${bgColor} 20%, var(--app-card))`,
+                                    color: 'var(--app-text-primary)',
+                                    border: selectedCalendarDate === dateStr ? '1px solid var(--app-accent)' : '1px solid var(--app-border-subtle)',
                                     borderRadius: 12,
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
@@ -2076,7 +2093,7 @@ export function EmployeeProfileScreen({
                                   }}
                                 >
                                   <div>{day}</div>
-                                  {label && <div style={{ fontSize: 10, fontWeight: 600, textAlign: 'center', lineHeight: '1.2', opacity: 0.95 }}>{label}</div>}
+                                  {label && <div className="profile-calendar-day-label">{label}</div>}
                                 </button>
                               );
                             }

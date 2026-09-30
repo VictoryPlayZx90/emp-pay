@@ -48,6 +48,8 @@ function Pill({
   return (
     <button
       onClick={onClick}
+      className={`status-choice${active ? ' is-active' : ''} ${label.toLowerCase().replace(/\s+/g, '-')}`}
+      aria-pressed={active}
       style={{
         flex: grow ? 1 : undefined,
         padding: '7px 14px',
@@ -101,7 +103,7 @@ export function AttendanceRow({ employee, record, onUpdate, onNavigateToProfile 
   if (isMobile) {
     return (
       <div
-        className="dashboard-card"
+        className="attendance-row"
         style={{
           background: 'var(--app-card)',
           borderRadius: 14,
@@ -155,11 +157,13 @@ export function AttendanceRow({ employee, record, onUpdate, onNavigateToProfile 
               fontSize: 13.5,
               fontWeight: 600,
               borderRadius: 10,
-              border: `1.5px solid ${record.mainStatus === 'present' ? '#BBF7D0' : 'var(--app-input-border)'}`,
-              background: record.mainStatus === 'present' ? '#F0FDF4' : 'var(--app-input-bg)',
-              color: record.mainStatus === 'present' ? '#16A34A' : 'var(--app-text-muted)',
+              border: `1px solid ${record.mainStatus === 'present' ? 'var(--app-stat-present)' : 'var(--app-border)'}`,
+              background: record.mainStatus === 'present' ? 'var(--app-stat-present-bg)' : 'var(--app-card)' ,
+              color: record.mainStatus === 'present' ? 'var(--app-stat-present)' : 'var(--app-text-muted)',
               cursor: 'pointer',
             }}
+            className={`status-choice present${record.mainStatus === 'present' ? ' is-active' : ''}`}
+            aria-pressed={record.mainStatus === 'present'}
           >
             Present
           </button>
@@ -171,11 +175,13 @@ export function AttendanceRow({ employee, record, onUpdate, onNavigateToProfile 
               fontSize: 13.5,
               fontWeight: 600,
               borderRadius: 10,
-              border: `1.5px solid ${record.mainStatus === 'absent' ? '#FECACA' : 'var(--app-input-border)'}`,
-              background: record.mainStatus === 'absent' ? '#FEF2F2' : 'var(--app-input-bg)',
-              color: record.mainStatus === 'absent' ? '#DC2626' : 'var(--app-text-muted)',
+              border: `1px solid ${record.mainStatus === 'absent' ? 'var(--app-stat-absent)' : 'var(--app-border)'}`,
+              background: record.mainStatus === 'absent' ? 'var(--app-stat-absent-bg)' : 'var(--app-card)',
+              color: record.mainStatus === 'absent' ? 'var(--app-stat-absent)' : 'var(--app-text-muted)',
               cursor: 'pointer',
             }}
+            className={`status-choice absent${record.mainStatus === 'absent' ? ' is-active' : ''}`}
+            aria-pressed={record.mainStatus === 'absent'}
           >
             Absent
           </button>
@@ -232,6 +238,7 @@ export function AttendanceRow({ employee, record, onUpdate, onNavigateToProfile 
   // ── Desktop layout ──────────────────────────────────────────
   return (
     <div
+      className="attendance-row"
       style={{
         display: 'flex',
         alignItems: 'center',

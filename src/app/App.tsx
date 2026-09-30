@@ -206,6 +206,19 @@ export default function App() {
   const [googleUser, setGoogleUser] = useState<GoogleUser | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('synced');
   const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
+  const loginTransitionStartedAtRef = useRef<number | null>(null);
+
+  const beginLoginTransition = () => {
+    loginTransitionStartedAtRef.current = Date.now();
+  };
+
+  const finishLoginTransition = async () => {
+    const startedAt = loginTransitionStartedAtRef.current;
+    if (startedAt === null) return;
+    const remaining = Math.max(0, 3000 - (Date.now() - startedAt));
+    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
+    loginTransitionStartedAtRef.current = null;
+  };
 
   // ── Cloud sync refs ───────────────────────────────────────────────────────────
   //
@@ -305,6 +318,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
       if (firebaseUser) {
+        await finishLoginTransition();
         const uid = firebaseUser.uid;
 
         // Block all writes until load completes.
@@ -519,7 +533,8 @@ export default function App() {
 
   // "Guest" — skip Firebase auth, go straight to profile selection.
   // No async cloud load; allow writes immediately.
-  const handleGuestLogin = () => {
+  const handleGuestLogin = async () => {
+    await finishLoginTransition();
     setGoogleUser(null);
     setSyncStatus('offline');
     initialSyncCompleteRef.current = true;
@@ -666,7 +681,7 @@ export default function App() {
     return (
       <ThemeProvider>
         <Toaster position="top-center" richColors />
-        <LoginScreen onGuestLogin={handleGuestLogin} />
+        <LoginScreen onGuestLogin={handleGuestLogin} onLoginStart={beginLoginTransition} />
       </ThemeProvider>
     );
   }
@@ -696,13 +711,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div style={{
-        display: 'flex',
-        height: '100dvh',
-        overflow: 'hidden',
-        background: 'var(--app-bg)',
-        flexDirection: isMobile ? 'column' : 'row',
-      }}>
+      <div className={`app-shell${isMobile ? ' is-mobile' : ''}`}>
         <Toaster position={isMobile ? 'top-center' : 'bottom-right'} richColors />
 
         {!isMobile && (
@@ -719,7 +728,7 @@ export default function App() {
           />
         )}
 
-        <main style={{ flex: 1, overflowY: 'auto', minWidth: 0, paddingBottom: isMobile ? 72 : 0 }}>
+        <main className="app-content" style={{ paddingBottom: isMobile ? 72 : 0 }}>
           {currentScreen === 'dashboard' && (
             <DashboardScreen
               employees={employees}

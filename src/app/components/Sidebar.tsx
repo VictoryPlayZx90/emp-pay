@@ -77,7 +77,7 @@ function AccountMenu({ googleUser, currentUser, onSwitchUser, onSignOut, onClose
 
   return (
     <div ref={ref} style={{
-      position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 200,
+      position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 260, zIndex: 200,
       background: 'var(--app-modal-bg)', border: '1px solid var(--app-border)',
       borderRadius: 14, boxShadow: '0 -4px 28px rgba(0,0,0,0.18)',
       overflow: 'hidden',
@@ -164,44 +164,33 @@ export function Sidebar({
   };
 
   return (
-    <aside className="app-sidebar" style={{ width: 220, background: 'var(--app-card)', borderRight: '1px solid var(--app-border)', display: 'flex', flexDirection: 'column', flexShrink: 0, height: '100%' }}>
+    <aside className="app-topbar">
 
       {/* Company header + sync */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '18px 16px 16px', borderBottom: '1px solid var(--app-border-subtle)' }}>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--app-btn-primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <Building2 style={{ width: 16, height: 16, color: 'var(--app-btn-primary-fg)' }} />
+      <div className="app-brand">
+        <div className="app-brand-mark">
+          <Building2 style={{ width: 17, height: 17, color: 'var(--app-btn-primary-fg)' }} />
         </div>
-        <span className="sidebar-text" style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--app-text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span className="app-brand-name">
           {companyName}
         </span>
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <nav className="app-topnav" aria-label="Main navigation">
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const active = currentScreen === id;
           return (
-            <button key={id} onClick={() => onNavigate(id)} style={{
-              height: 38, width: '100%',
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '0 10px', borderRadius: 10, border: 'none',
-              background: active ? 'var(--app-nav-active-bg)' : 'transparent',
-              color: active ? 'var(--app-nav-active-color)' : 'var(--app-nav-inactive)',
-              fontSize: 13.5, fontWeight: active ? 600 : 400,
-              cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s',
-            }}
-              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--app-nav-hover-bg)'; }}
-              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
-              <span className="sidebar-text">{label}</span>
+            <button key={id} onClick={() => onNavigate(id)} className={`app-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}>
+              <Icon style={{ width: 15, height: 15, flexShrink: 0 }} />
+              {label}
             </button>
           );
         })}
       </nav>
 
       {/* User row */}
-      <div style={{ borderTop: '1px solid var(--app-border-subtle)', padding: '10px 10px', position: 'relative' }}>
+      <div className="app-account" style={{ position: 'relative' }}>
         {showMenu && googleUser && (
           <AccountMenu
             googleUser={googleUser}
@@ -214,13 +203,7 @@ export function Sidebar({
 
         <button
           onClick={() => googleUser ? setShowMenu(v => !v) : onSwitchUser()}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 10px', borderRadius: 12, border: 'none',
-            background: 'transparent', cursor: 'pointer', textAlign: 'left',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--app-nav-hover-bg)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          className="app-account-button"
         >
           {/* Avatar: Google photo > initials */}
           {googleUser?.photoURL ? (
@@ -237,11 +220,11 @@ export function Sidebar({
             </div>
           )}
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="sidebar-text" style={{ fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div className="app-account-copy">
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {googleUser?.displayName ?? currentUser.name}
             </div>
-            <div className="sidebar-text" style={{ fontSize: 11, color: 'var(--app-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 11, color: 'var(--app-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {googleUser?.email ?? 'Switch profile'}
             </div>
           </div>

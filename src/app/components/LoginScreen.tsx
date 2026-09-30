@@ -3,15 +3,20 @@ import { Shield, AlertCircle } from 'lucide-react';
 import { auth, googleProvider, signInWithPopup } from '../../lib/firebase';
 
 interface Props {
-  onGuestLogin: () => void;
+  onGuestLogin: () => void | Promise<void>;
+  onLoginStart: () => void;
 }
 
-export function LoginScreen({ onGuestLogin }: Props) {
+export function LoginScreen({ onGuestLogin, onLoginStart }: Props) {
   const [loading, setLoading] = useState(false);
+  const [loadingMethod, setLoadingMethod] = useState<'google' | 'guest' | null>(null);
   const [error, setError] = useState('');
 
   const handleGoogleSignIn = async () => {
+    if (loading) return;
+    onLoginStart();
     setLoading(true);
+    setLoadingMethod('google');
     setError('');
     try {
       await signInWithPopup(auth, googleProvider);
@@ -20,6 +25,7 @@ export function LoginScreen({ onGuestLogin }: Props) {
       // Keep loading=true so the spinner stays visible during that transition.
     } catch (err: unknown) {
       setLoading(false);
+      setLoadingMethod(null);
       const code = (err as { code?: string })?.code ?? '';
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
         // User dismissed — no message needed
@@ -37,8 +43,17 @@ export function LoginScreen({ onGuestLogin }: Props) {
     }
   };
 
+  const handleGuestLogin = async () => {
+    if (loading) return;
+    onLoginStart();
+    setLoading(true);
+    setLoadingMethod('guest');
+    setError('');
+    await onGuestLogin();
+  };
+
   const AppLogo = () => (
-    <div style={{
+    <div className="login-screen" style={{
       width: 56, height: 56, borderRadius: 18,
       background: 'var(--app-btn-primary-bg)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -74,7 +89,7 @@ export function LoginScreen({ onGuestLogin }: Props) {
       <style>{`@keyframes ls-spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Card */}
-      <div style={{
+      <div className="login-card" style={{
         width: '100%', maxWidth: 420,
         background: 'var(--app-card)', border: '1px solid var(--app-border)',
         borderRadius: 28, padding: '44px 36px 40px',
@@ -127,7 +142,7 @@ export function LoginScreen({ onGuestLogin }: Props) {
           {loading ? (
             <>
               <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2.5px solid var(--app-text-faint)', borderTopColor: 'var(--app-text-muted)', animation: 'ls-spin 0.7s linear infinite' }} />
-              Connecting...
+              {loadingMethod === 'guest' ? 'Opening workspace...' : 'Connecting...'}
             </>
           ) : (
             <>
@@ -146,7 +161,7 @@ export function LoginScreen({ onGuestLogin }: Props) {
 
         {/* Guest button */}
         <button
-          onClick={onGuestLogin}
+          onClick={handleGuestLogin}
           disabled={loading}
           style={{
             width: '100%',
@@ -170,8 +185,15 @@ export function LoginScreen({ onGuestLogin }: Props) {
             (e.currentTarget as HTMLElement).style.color = 'var(--app-text-secondary)';
           }}
         >
-          Continue as Guest
+          {loadingMethod === 'guest' ? 'Opening workspace...' : 'Continue as Guest'}
         </button>
+
+        {loading && (
+          <div className="login-progress" role="status" aria-live="polite">
+            <div className="login-progress-track"><span /></div>
+            <span>{loadingMethod === 'guest' ? 'Preparing your workspace' : 'Securing your sign-in'}</span>
+          </div>
+        )}
 
         {/* Trust */}
         <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 7, color: 'var(--app-text-faint)', fontSize: 12.5 }}>

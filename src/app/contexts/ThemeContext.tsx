@@ -30,7 +30,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem('kc_theme');
       if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
     } catch { /* ignore */ }
-    return 'system';
+    return 'dark';
   });
 
   const [isDark, setIsDark] = useState(() => resolveIsDark(
@@ -39,7 +39,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const s = localStorage.getItem('kc_theme');
         if (s === 'light' || s === 'dark' || s === 'system') return s as ThemePreference;
       } catch { /* ignore */ }
-      return 'system';
+      return 'dark';
     })()
   ));
 
@@ -48,6 +48,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const dark = resolveIsDark(pref);
       setIsDark(dark);
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', dark);
     };
 
     apply(theme);

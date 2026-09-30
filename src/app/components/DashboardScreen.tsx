@@ -55,16 +55,20 @@ function shiftDate(dateStr: string, days: number): string {
 function SummaryCard({ label, count, total, bg, color, icon: Icon }: {
   label: string; count: number; total: number; bg: string; color: string; icon: ElementType;
 }) {
+  const percentage = total ? Math.round((count / total) * 100) : 0;
   return (
-    <div className="dashboard-card" style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 14, padding: '14px 16px', flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+    <div className="summary-card" title={`${count} ${label.toLowerCase()} of ${total} employees`} style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 14, padding: '14px 16px', flex: 1, minWidth: 0 }}>
+      <div className="summary-card-head" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <span style={{ fontSize: 11.5, color: 'var(--app-text-muted)', fontWeight: 500 }}>{label}</span>
         <div style={{ width: 28, height: 28, background: bg, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon style={{ width: 13, height: 13, color }} />
         </div>
       </div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--app-text-primary)', lineHeight: 1 }}>{count}</div>
-      <div style={{ fontSize: 11, color: 'var(--app-text-muted)', marginTop: 3 }}>of {total}</div>
+      <div className="summary-card-value">{percentage}<span>%</span></div>
+      <div className="summary-progress" role="progressbar" aria-label={`${label} as a share of employees`} aria-valuemin={0} aria-valuemax={total} aria-valuenow={count}>
+        <span style={{ width: `${percentage}%`, background: color }} />
+      </div>
+      <div className="summary-card-foot">of employees</div>
     </div>
   );
 }
@@ -92,6 +96,9 @@ export function DashboardScreen({
   const halfDayCount  = records.filter(r => r.record.subStatus === 'half-day').length;
   const absentCount   = records.filter(r => r.record.mainStatus === 'absent').length;
   const notMarked     = records.filter(r => !r.record.mainStatus).length;
+  const markedCount = activeEmployees.length - notMarked;
+  const markedPercent = activeEmployees.length ? Math.round((markedCount / activeEmployees.length) * 100) : 0;
+  const unmarkedEmployees = records.filter(r => !r.record.mainStatus).slice(0, 4);
 
   const existingHoliday = holidays.find(h => h.date === selectedDate);
   const isHoliday = !!existingHoliday;
@@ -123,14 +130,15 @@ export function DashboardScreen({
   };
 
   return (
-    <div style={{ padding: isMobile ? '20px 16px 16px' : '32px 36px', maxWidth: isMobile ? '100%' : 960, margin: '0 auto' }}>
+    <div className="dashboard-page">
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
         <div>
-          <h1 style={{ color: 'var(--app-text-primary)', marginBottom: 2, fontSize: isMobile ? 20 : undefined }}>Attendance</h1>
+          <div className="dashboard-eyebrow">{settings.companyName} <span>·</span> WORKSPACE</div>
+          <h1 style={{ color: 'var(--app-text-primary)', marginBottom: 2, fontSize: isMobile ? 25 : undefined }}>Welcome back</h1>
           <p style={{ fontSize: 13, color: 'var(--app-text-muted)' }}>
-            {fmt.month} {fmt.year} · {workingDays} working days
+            Here’s your attendance overview for {fmt.month} {fmt.day}.
           </p>
         </div>
 
@@ -246,22 +254,24 @@ export function DashboardScreen({
         </div>
       )}
 
+      <div className="dashboard-layout">
+      <section className="dashboard-main-column">
       {/* Summary cards */}
-      <div style={{
+      <div className="dashboard-metrics" style={{
         display: 'grid',
         gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
         gap: isMobile ? 10 : 14,
         marginBottom: isMobile ? 16 : 20,
       }}>
-        <SummaryCard label="Present"    count={presentCount} total={activeEmployees.length} bg="#F0FDF4" color="#16A34A" icon={UserCheck} />
-        <SummaryCard label="Half Day"   count={halfDayCount} total={activeEmployees.length} bg="#FEFCE8" color="#CA8A04" icon={Clock} />
-        <SummaryCard label="Absent"     count={absentCount}  total={activeEmployees.length} bg="#FEF2F2" color="#DC2626" icon={UserX} />
-        <SummaryCard label="Not Marked" count={notMarked}    total={activeEmployees.length} bg="#F3F4F6" color="#6B7280" icon={Users} />
+        <SummaryCard label="Present"    count={presentCount} total={activeEmployees.length} bg="var(--app-stat-present-bg)" color="var(--app-stat-present)" icon={UserCheck} />
+        <SummaryCard label="Half Day"   count={halfDayCount} total={activeEmployees.length} bg="var(--app-stat-half-bg)" color="var(--app-stat-half)" icon={Clock} />
+        <SummaryCard label="Absent"     count={absentCount}  total={activeEmployees.length} bg="var(--app-stat-absent-bg)" color="var(--app-stat-absent)" icon={UserX} />
+        <SummaryCard label="Not Marked" count={notMarked}    total={activeEmployees.length} bg="var(--app-stat-neutral-bg)" color="var(--app-stat-neutral)" icon={Users} />
       </div>
 
       {/* Attendance sheet */}
       {isMobile ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="attendance-records" id="attendance-records" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {records.map(({ emp, record }) => (
             <AttendanceRow
               key={emp.id}
@@ -273,7 +283,7 @@ export function DashboardScreen({
           ))}
         </div>
       ) : (
-        <div className="dashboard-card" style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 16, overflow: 'hidden' }}>
+        <div className="attendance-records" id="attendance-records" style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 18, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 24px', background: 'var(--app-table-header-bg)', borderBottom: '1px solid var(--app-border-subtle)' }}>
             {[{ w: 200, label: 'Employee' }, { w: 148, label: 'Status' }, { label: 'Details', flex: 1 }, { w: 110, label: 'Marked As', align: 'right' as const }].map(col => (
               <div key={col.label} style={{ width: col.w, flex: col.flex, textAlign: col.align, fontSize: 11.5, fontWeight: 600, color: 'var(--app-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -296,6 +306,33 @@ export function DashboardScreen({
       <p style={{ fontSize: 11.5, color: 'var(--app-text-faint)', marginTop: 12, textAlign: 'center' }}>
         Changes are saved automatically
       </p>
+      </section>
+
+      <aside className="dashboard-focus-card">
+        <div className="focus-card-topline"><span className="focus-card-dot" /> DAILY CLOSEOUT</div>
+        <div className="focus-card-heading">Attendance<br />check-in</div>
+        <p className="focus-card-date">{fmt.dayName}, {fmt.monthShort} {fmt.day}</p>
+        <div className="focus-progress-row"><strong>{markedCount}<span>/{activeEmployees.length}</span></strong><span>marked</span></div>
+        <div className="focus-progress-track"><span style={{ width: `${markedPercent}%` }} /></div>
+        <div className="focus-card-caption">{markedPercent}% of today’s attendance recorded</div>
+        <div className="focus-list-heading">{notMarked ? 'STILL TO MARK' : 'ALL CAUGHT UP'}</div>
+        {unmarkedEmployees.length ? (
+          <div className="focus-employee-list">
+            {unmarkedEmployees.map(({ emp }) => (
+              <div className="focus-employee" key={emp.id}>
+                <span className="focus-employee-avatar">{emp.name.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span>
+                <span>{emp.name}</span><span className="focus-pending-dot" />
+              </div>
+            ))}
+            {notMarked > unmarkedEmployees.length && <div className="focus-more">+{notMarked - unmarkedEmployees.length} more to mark</div>}
+          </div>
+        ) : (
+          <div className="focus-complete"><span>✓</span> Every employee has a status</div>
+        )}
+        <a className="focus-action" href="#attendance-records">Review attendance <span>↗</span></a>
+        <div className="focus-card-footer">{workingDays} working days this month</div>
+      </aside>
+      </div>
 
       {/* Add Holiday Modal */}
       {showHolidayModal && (
