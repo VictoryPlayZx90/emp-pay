@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, X, Camera } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Camera, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIsMobile } from '../hooks/useIsMobile';
 import type { Employee, EmployeeDocument } from '../App';
@@ -7,6 +7,7 @@ import { ProfilePhoto } from './ProfilePhoto';
 import { PhotoUploadCrop } from './PhotoUploadCrop';
 import { DocumentManager } from './DocumentManager';
 import { SyncIndicator } from './SyncIndicator';
+import { BulkEmployeeImport } from './BulkEmployeeImport';
 
 interface Props {
   employees: Employee[];
@@ -417,6 +418,7 @@ export function EmployeeScreen({ employees, onUpdateEmployees, onNavigateToProfi
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState('');
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   const openAdd = () => { setForm(EMPTY_FORM); setEditingId(null); setError(''); setModalMode('add'); };
   const openEdit = (emp: Employee) => {
@@ -542,6 +544,13 @@ export function EmployeeScreen({ employees, onUpdateEmployees, onNavigateToProfi
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <SyncIndicator />
             <button
+              onClick={() => setShowBulkImport(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '9px 11px' : '9px 14px', fontSize: 13, fontWeight: 600, background: 'var(--app-card)', color: 'var(--app-text-secondary)', border: '1px solid var(--app-border)', borderRadius: 12, cursor: 'pointer' }}
+            >
+              <Upload style={{ width: 14, height: 14 }} />
+              {isMobile ? 'Import' : 'Bulk Import'}
+            </button>
+            <button
               onClick={openAdd}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '9px 14px' : '9px 18px', fontSize: 13.5, fontWeight: 600, background: 'var(--app-btn-primary-bg)', color: 'var(--app-btn-primary-fg)', border: 'none', borderRadius: 12, cursor: 'pointer' }}
             >
@@ -653,6 +662,15 @@ export function EmployeeScreen({ employees, onUpdateEmployees, onNavigateToProfi
           error={error}
           isMobile={isMobile}
           onPhotoUpload={() => setShowPhotoUpload(true)}
+        />
+      )}
+
+      {showBulkImport && (
+        <BulkEmployeeImport
+          employees={employees}
+          onImport={onUpdateEmployees}
+          onClose={() => setShowBulkImport(false)}
+          isMobile={isMobile}
         />
       )}
 
