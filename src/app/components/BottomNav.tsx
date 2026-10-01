@@ -26,7 +26,7 @@ export function BottomNav({ current, onNavigate }: Props) {
         background: 'var(--app-card)',
         borderTop: '1px solid var(--app-border)',
         display: 'flex',
-        zIndex: 50,
+        zIndex: 300,
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >

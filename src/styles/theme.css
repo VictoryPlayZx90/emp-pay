@@ -2,6 +2,13 @@
 
 /* ── App-specific design tokens ─────────────────────────────────────── */
 :root, [data-theme="light"] {
+  /* Shared layer scale: local controls < navigation < modal surfaces < alerts. */
+  --app-layer-card-popover: 5;
+  --app-layer-header-popover: 150;
+  --app-layer-navigation: 300;
+  --app-layer-modal-backdrop: 900;
+  --app-layer-modal: 910;
+  --app-layer-toast: 1100;
   --app-bg:                 #F7F8FA;
   --app-card:               #ffffff;
   --app-card-hover:         #FAFAFA;
@@ -288,8 +295,10 @@ html, body, #root { min-height: 100%; }
 body { background: #070B0E; color: var(--app-text-primary); }
 button, input, select, textarea { font: inherit; }
 
-@keyframes shell-open { from { opacity: 0; transform: translateY(9px) scale(.992); } to { opacity: 1; transform: none; } }
-@keyframes content-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* Keep reveal motion in opacity only. Transforms on app shells/screens create
+   stacking contexts that can trap fixed popovers and dialogs underneath cards. */
+@keyframes shell-open { from { opacity: 0; } to { opacity: 1; } }
+@keyframes content-rise { from { opacity: 0; } to { opacity: 1; } }
 @keyframes mark-pop { 0% { transform: scale(.72) rotate(-8deg); } 75% { transform: scale(1.08) rotate(2deg); } 100% { transform: none; } }
 @keyframes login-progress-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .app-shell { animation: shell-open .48s cubic-bezier(.2,.75,.25,1) both; }
@@ -373,7 +382,7 @@ button, input, select, textarea { font: inherit; }
 .dashboard-main-column { min-width: 0; }
 .dashboard-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 12px !important; }
 .dashboard-metrics > div { min-height: 116px; padding: 17px 18px !important; border-radius: 18px !important; box-shadow: inset 0 1px rgba(255,255,255,.025); }
-.attendance-records { scroll-margin-top: 20px; box-shadow: 0 12px 34px rgba(0,0,0,.12); }
+.attendance-records { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; gap: 12px; scroll-margin-top: 20px; box-shadow: none; }
 .dashboard-focus-card {
   position: sticky; top: 20px; overflow: hidden; min-height: 390px; padding: 24px 22px 18px;
   border: 1px solid #303A3A; border-radius: 22px;
@@ -410,6 +419,7 @@ button, input, select, textarea { font: inherit; }
   .app-nav-item { gap: 5px; padding-inline: 10px; font-size: 11.5px; }
   .app-account { width: 165px; }
   .dashboard-layout { grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; }
+  .attendance-records { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 850px) {
   .app-shell { height: calc(100dvh - 20px); margin: 10px; border-radius: 22px; }
@@ -420,6 +430,7 @@ button, input, select, textarea { font: inherit; }
   .app-topnav { order: 3; flex-basis: 100%; justify-content: flex-start; overflow-x: auto; }
   .app-nav-item { flex: 0 0 auto; }
   .dashboard-layout { grid-template-columns: minmax(0, 1fr); }
+  .attendance-records { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-focus-card { position: static; min-height: 0; }
 }
 @media (max-width: 640px) {
@@ -431,6 +442,7 @@ button, input, select, textarea { font: inherit; }
   .dashboard-metrics { gap: 9px !important; }
   .dashboard-metrics > div { min-height: 102px; padding: 13px !important; }
   .dashboard-focus-card { padding: 21px 18px 16px; border-radius: 18px; }
+  .attendance-records { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

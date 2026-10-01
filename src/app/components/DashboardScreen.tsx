@@ -18,6 +18,7 @@ interface Props {
   updateAttendance: (employeeId: string, date: string, record: AttendanceRecord) => void;
   onUpdateHolidays?: (holidays: Holiday[]) => void;
   onNavigateToProfile?: (employeeId: string) => void;
+  onUpdateEmployeePhoto?: (employeeId: string, photo: string) => void;
 }
 
 
@@ -74,7 +75,7 @@ function SummaryCard({ label, count, total, bg, color, icon: Icon }: {
 }
 
 export function DashboardScreen({
-  employees, holidays, settings, selectedDate, onDateChange, getAttendance, updateAttendance, onUpdateHolidays, onNavigateToProfile,
+  employees, holidays, settings, selectedDate, onDateChange, getAttendance, updateAttendance, onUpdateHolidays, onNavigateToProfile, onUpdateEmployeePhoto,
 }: Props) {
   const isMobile = useIsMobile();
   const [showHolidayModal, setShowHolidayModal] = useState(false);
@@ -133,7 +134,7 @@ export function DashboardScreen({
     <div className="dashboard-page">
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap', position: 'relative', zIndex: 40 }}>
         <div>
           <div className="dashboard-eyebrow">{settings.companyName} <span>·</span> WORKSPACE</div>
           <h1 style={{ color: 'var(--app-text-primary)', marginBottom: 2, fontSize: isMobile ? 25 : undefined }}>Welcome back</h1>
@@ -269,39 +270,26 @@ export function DashboardScreen({
         <SummaryCard label="Not Marked" count={notMarked}    total={activeEmployees.length} bg="var(--app-stat-neutral-bg)" color="var(--app-stat-neutral)" icon={Users} />
       </div>
 
-      {/* Attendance sheet */}
-      {isMobile ? (
-        <div className="attendance-records" id="attendance-records" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {records.map(({ emp, record }) => (
-            <AttendanceRow
-              key={emp.id}
-              employee={emp}
-              record={record}
-              onUpdate={rec => updateAttendance(emp.id, selectedDate, rec)}
-              onNavigateToProfile={onNavigateToProfile ? () => onNavigateToProfile(emp.id) : undefined}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="attendance-records" id="attendance-records" style={{ background: 'var(--app-card)', border: '1px solid var(--app-border)', borderRadius: 18, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '10px 24px', background: 'var(--app-table-header-bg)', borderBottom: '1px solid var(--app-border-subtle)' }}>
-            {[{ w: 200, label: 'Employee' }, { w: 148, label: 'Status' }, { label: 'Details', flex: 1 }, { w: 110, label: 'Marked As', align: 'right' as const }].map(col => (
-              <div key={col.label} style={{ width: col.w, flex: col.flex, textAlign: col.align, fontSize: 11.5, fontWeight: 600, color: 'var(--app-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {col.label}
-              </div>
-            ))}
-          </div>
-          {records.map(({ emp, record }) => (
-            <AttendanceRow
-              key={emp.id}
-              employee={emp}
-              record={record}
-              onUpdate={rec => updateAttendance(emp.id, selectedDate, rec)}
-              onNavigateToProfile={onNavigateToProfile ? () => onNavigateToProfile(emp.id) : undefined}
-            />
-          ))}
-        </div>
-      )}
+      {/* Attendance cards */}
+      <div
+        className="attendance-records"
+        id="attendance-records"
+        style={{
+          alignItems: 'stretch',
+        }}
+      >
+        {records.map(({ emp, record }) => (
+          <AttendanceRow
+            key={emp.id}
+            employee={emp}
+            record={record}
+            cardLayout
+            onUpdate={rec => updateAttendance(emp.id, selectedDate, rec)}
+            onPhotoUpdate={onUpdateEmployeePhoto ? photo => onUpdateEmployeePhoto(emp.id, photo) : undefined}
+            onNavigateToProfile={onNavigateToProfile ? () => onNavigateToProfile(emp.id) : undefined}
+          />
+        ))}
+      </div>
 
       <p style={{ fontSize: 11.5, color: 'var(--app-text-faint)', marginTop: 12, textAlign: 'center' }}>
         Changes are saved automatically
@@ -341,7 +329,7 @@ export function DashboardScreen({
             position: 'fixed',
             inset: 0,
             background: 'var(--app-overlay)',
-            zIndex: 100,
+            zIndex: 900,
             display: 'flex',
             alignItems: isMobile ? 'flex-end' : 'center',
             justifyContent: 'center',

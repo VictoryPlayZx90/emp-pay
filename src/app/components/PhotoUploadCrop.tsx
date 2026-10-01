@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import { X, Upload, Camera, RotateCw } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -69,9 +70,9 @@ export function PhotoUploadCrop({ onSave, onCancel, currentPhoto }: Props) {
     } catch (e) { console.error(e); }
   };
 
-  return (
+  return createPortal((
     <div
-      style={{ position: 'fixed', inset: 0, background: 'var(--app-overlay)', zIndex: 100, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--app-overlay)', zIndex: 900, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
       onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div style={{ background: 'var(--app-card)', width: isMobile ? '100%' : 600, maxHeight: isMobile ? '90vh' : '80vh', borderRadius: isMobile ? '20px 20px 0 0' : 20, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -178,5 +179,5 @@ export function PhotoUploadCrop({ onSave, onCancel, currentPhoto }: Props) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

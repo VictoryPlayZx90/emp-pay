@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -37,7 +38,8 @@ function getDaysInMonth(year: number, month: number): number {
 export function CalendarDropdown({ selectedDate, maxDate, onChange, displayFormat = 'full' }: Props) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [panelAnchor, setPanelAnchor] = useState({ top: 0, right: 0 });
 
   const fmt = formatDisplayDate(selectedDate, displayFormat);
   const [selectedDay, setSelectedDay] = useState(fmt.day);
@@ -48,17 +50,19 @@ export function CalendarDropdown({ selectedDate, maxDate, onChange, displayForma
   const years = Array.from({ length: 26 }, (_, i) => currentYear - 20 + i);
   const daysInMonth = getDaysInMonth(selectedYear, selectedMonth);
 
-  useEffect(() => {
-    if (!isMobile && isOpen) {
-      function handleClickOutside(event: MouseEvent) {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-          setIsOpen(false);
-        }
-      }
-
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+  useLayoutEffect(() => {
+    if (!isOpen || isMobile) return;
+    const updateAnchor = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect) setPanelAnchor({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    };
+    updateAnchor();
+    window.addEventListener('resize', updateAnchor);
+    window.addEventListener('scroll', updateAnchor, true);
+    return () => {
+      window.removeEventListener('resize', updateAnchor);
+      window.removeEventListener('scroll', updateAnchor, true);
+    };
   }, [isOpen, isMobile]);
 
   useEffect(() => {
@@ -92,6 +96,7 @@ export function CalendarDropdown({ selectedDate, maxDate, onChange, displayForma
   return (
     <div style={{ position: 'relative' }}>
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           textAlign: 'center',
@@ -117,40 +122,38 @@ export function CalendarDropdown({ selectedDate, maxDate, onChange, displayForma
       </button>
 
       {isOpen && (
-        <>
+        createPortal(<>
           {/* Backdrop */}
           <div
             style={{
               position: 'fixed',
               inset: 0,
               background: 'var(--app-overlay)',
-              zIndex: 100,
+              zIndex: 1199,
             }}
             onClick={() => setIsOpen(false)}
           />
 
           {/* Picker Panel */}
           <div
-            ref={dropdownRef}
             onClick={e => e.stopPropagation()}
             style={{
-              position: isMobile ? 'fixed' : 'absolute',
+              position: 'fixed',
               ...(isMobile ? {
                 bottom: 0,
                 left: 0,
                 right: 0,
                 borderRadius: '20px 20px 0 0',
               } : {
-                top: '100%',
-                right: 0,
-                marginTop: 4,
+                top: panelAnchor.top,
+                right: panelAnchor.right,
                 borderRadius: 12,
               }),
               background: 'var(--app-modal-bg)',
               border: '1px solid var(--app-border)',
               padding: isMobile ? '24px 20px 32px' : 16,
               boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-              zIndex: 101,
+              zIndex: 1200,
               width: isMobile ? '100%' : 280,
               maxHeight: isMobile ? '80vh' : 'auto',
             }}
@@ -284,7 +287,7 @@ export function CalendarDropdown({ selectedDate, maxDate, onChange, displayForma
               </button>
             </div>
           </div>
-        </>
+        </>, document.body)
       )}
     </div>
   );

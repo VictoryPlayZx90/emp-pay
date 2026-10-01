@@ -898,7 +898,7 @@ export function EmployeeProfileScreen({
       {/* Edit Employee Modal */}
       {showEditEmployee && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 100, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 900, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setShowEditEmployee(false); }}
         >
           <div style={{
@@ -975,7 +975,7 @@ export function EmployeeProfileScreen({
       {/* Note Modal */}
       {showNoteModal && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 100, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 900, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setShowNoteModal(false); }}
         >
           <div style={{
@@ -1054,7 +1054,7 @@ function ExportModal({
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 100, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 900, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{

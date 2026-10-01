@@ -740,6 +740,7 @@ export default function App() {
               updateAttendance={updateAttendance}
               onUpdateHolidays={setHolidays}
               onNavigateToProfile={navigateToEmployeeProfile}
+              onUpdateEmployeePhoto={(employeeId, photo) => setEmployees(previous => previous.map(employee => employee.id === employeeId ? { ...employee, profilePhoto: photo } : employee))}
             />
           )}
           {currentScreen === 'payroll' && (

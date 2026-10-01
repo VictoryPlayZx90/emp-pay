@@ -124,11 +124,11 @@ function InviteModal({ isMobile, onConfirm, onClose }: InviteModalProps) {
   };
 
   const sheet = isMobile ? {
-    position: 'fixed' as const, inset: 0, zIndex: 300,
+    position: 'fixed' as const, inset: 0, zIndex: 900,
     background: 'var(--app-overlay)',
     display: 'flex', alignItems: 'flex-end',
   } : {
-    position: 'fixed' as const, inset: 0, zIndex: 300,
+    position: 'fixed' as const, inset: 0, zIndex: 900,
     background: 'var(--app-overlay)',
     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
   };
@@ -263,10 +263,10 @@ function EditRoleModal({ member, isMobile, onConfirm, onClose }: EditRoleProps) 
   );
 
   const sheet = isMobile ? {
-    position: 'fixed' as const, inset: 0, zIndex: 300,
+    position: 'fixed' as const, inset: 0, zIndex: 900,
     background: 'var(--app-overlay)', display: 'flex', alignItems: 'flex-end',
   } : {
-    position: 'fixed' as const, inset: 0, zIndex: 300,
+    position: 'fixed' as const, inset: 0, zIndex: 900,
     background: 'var(--app-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
   };
 

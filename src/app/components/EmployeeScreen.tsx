@@ -69,7 +69,7 @@ function ModalForm({
 }) {
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'var(--app-overlay)', zIndex: 100, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'var(--app-overlay)', zIndex: 900, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{

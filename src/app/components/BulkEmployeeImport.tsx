@@ -173,7 +173,7 @@ export function BulkEmployeeImport({ employees, onImport, onClose, isMobile }: P
 
   const muted: React.CSSProperties = { color: 'var(--app-text-muted)' };
   return (
-    <div role="presentation" onClick={event => { if (event.target === event.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 120, background: 'var(--app-overlay)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 20 }}>
+    <div role="presentation" onClick={event => { if (event.target === event.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'var(--app-overlay)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', padding: isMobile ? 0 : 20 }}>
       <section role="dialog" aria-modal="true" aria-labelledby="bulk-import-title" style={{ width: 'min(760px, 100%)', maxHeight: isMobile ? '94dvh' : '90vh', overflowY: 'auto', padding: isMobile ? 20 : 26, borderRadius: isMobile ? '20px 20px 0 0' : 20, background: 'var(--app-card)', border: '1px solid var(--app-border)', boxShadow: '0 24px 80px rgba(0,0,0,.35)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
           <div>
